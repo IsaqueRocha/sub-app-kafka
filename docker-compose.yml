@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  sub_app:
+    build: ./.docker/app
+    container_name: sub_app
+    image: isaquero/product-app:dev
+    volumes: 
+      - ./www:/var/www:delegated
+    depends_on:
+      - db
+      - redis
+
+  sub_nginx:
+    build:
+      context: ./.docker/nginx
+    container_name: sub_app_nginx
+    image: isaquero/sub_app_nginx:dev
+    restart: always
+    tty: true
+    ports:
+      - "8000:80"
+    volumes:
+      - ./www:/var/www:delegated
+    depends_on:
+      - sub_app
+
+  sub_db:
+    build:
+      context: ./.docker/mysql
+    container_name: sub_app_db
+    image: isaquero/sub_app_db:dev
+    restart: always
+    tty: true
+    ports:
+      - "33006:3306"
+    volumes:
+      - ./.docker/dbdata:/var/lib/mysql:delegated
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=sub_app
+
+  sub_redis:
+    image: redis:alpine
+    container_name: sub_app_redis
+    expose:
+      - 6379
